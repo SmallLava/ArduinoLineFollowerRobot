@@ -9,20 +9,14 @@ const int motorL1 = 10;
 const int motorR0 = 5;
 const int motorR1 = 6;
 const int RCenterIRSensor = 4;
+const int ROuterIRSensor = 3;
 const int LCenterIRSensor = 11;
+const int LOuterIRSensor = 12;
 
 enum class motor_state {
   Stop,
   Forward,
   Backward,
-};
-
-enum car_state {
-  Stop,
-  Forward,
-  Backward,
-  Leftturn,
-  Rightturn,
 };
 
 // put function declarations here:
@@ -31,13 +25,56 @@ float ultrasonicPulse(int trig, int echo);
 void LMotorCtl(motor_state state, int speed);
 void RMotorCtl(motor_state state, int speed);
 
-void carState(car_state, int speed);
+class carState {
+  motor_state RState = motor_state::Stop;
+  motor_state LState = motor_state::Stop;
+  void CheckState(motor_state currentL, motor_state currentR) {
+    if (currentL != LState) {
+      Stop();
+      delay(50);
+      LState = currentL;
+    }
+    if (currentR != RState) {
+      Stop();
+      delay(50);
+      RState = currentR;
+    }
+  }
+  public:
+    void Stop() {
+      LMotorCtl(motor_state::Stop, 0);
+      RMotorCtl(motor_state::Stop, 0);
+    }
+    void Forward(int speed = 200) {
+      CheckState(motor_state::Forward, motor_state::Forward);
+      LMotorCtl(motor_state::Forward, speed);
+      RMotorCtl(motor_state::Forward, speed);
+    }
+    void Backward(int speed = 80) {
+      CheckState(motor_state::Backward, motor_state::Backward);
+      LMotorCtl(motor_state::Backward, speed);
+      RMotorCtl(motor_state::Backward, speed);
+    }
+    void Leftturn() {
+      CheckState(motor_state::Forward, motor_state::Forward);
+      LMotorCtl(motor_state::Forward, 200);
+      RMotorCtl(motor_state::Forward, 120);
+    }
+    void Rightturn() {
+      CheckState(motor_state::Forward, motor_state::Forward);
+      LMotorCtl(motor_state::Forward, 120);
+      RMotorCtl(motor_state::Forward, 200);
+    }
+};
 
 bool IRSensorState(int pin);
 
+
+carState car;
+
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+
   pinMode(trig_pin, OUTPUT);
   pinMode(echo_pin, INPUT);
 
@@ -51,26 +88,23 @@ void setup() {
 
   pinMode(13, OUTPUT);
 
-  carState(Stop, 0);
+  car.Stop();
   delay(1000);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  if (IRSensorState(RCenterIRSensor)) {
-    carState(Rightturn, 120);
-  } else if (IRSensorState(LCenterIRSensor)) {
-    carState(Leftturn, 120);
+  
+  if(digitalRead(LCenterIRSensor) != HIGH && digitalRead(RCenterIRSensor) != HIGH) {
+    car.Backward(150);
+  } else if(digitalRead(RCenterIRSensor) != HIGH) {
+    car.Rightturn();
+  } else if(digitalRead(LCenterIRSensor) != HIGH) {
+    car.Leftturn();
   } else {
-    carState(Forward, 120);
+    car.Forward(235);
   }
-  float distance = ultrasonicPulse(trig_pin, echo_pin);
-  if (distance <= 20) {
-    digitalWrite(13, HIGH);
-  } else {
-    digitalWrite(13, LOW);
-  }
-  delay(500);
+  delay(10);
 }
 
 // put function definitions here:
@@ -132,27 +166,3 @@ void RMotorCtl(motor_state state, int speed) {
   }
 }
 
-void carState(car_state state, int speed) {
-  switch(state) {
-    case Stop:
-      LMotorCtl(motor_state::Stop, 0);
-      RMotorCtl(motor_state::Stop, 0);
-      return;
-    case Forward:
-      LMotorCtl(motor_state::Forward, speed);
-      RMotorCtl(motor_state::Forward, speed);
-      return;
-    case Backward:
-      LMotorCtl(motor_state::Backward, speed);
-      RMotorCtl(motor_state::Backward, speed);
-      return;
-    case Leftturn:
-      LMotorCtl(motor_state::Forward, speed);
-      RMotorCtl(motor_state::Stop, 0);
-      return;
-    case Rightturn:
-      LMotorCtl(motor_state::Stop, 0);
-      RMotorCtl(motor_state::Forward, speed);
-      return;
-  }
-}
