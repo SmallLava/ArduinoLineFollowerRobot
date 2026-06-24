@@ -25,8 +25,11 @@ public:
   void Stop();
   void Forward(int speed = 200);
   void Backward(int speed = 80);
-  void Leftturn();
-  void Rightturn();
+  void Leftturn(int speed = 200);
+  void Rightturn(int speed = 200);
+  void SharpLeft(int speed = 180);
+  void SharpRight(int speed = 180);
+  void Keep();
 
   void LMotorCtl(motor_state state, int speed);
   void RMotorCtl(motor_state state, int speed);

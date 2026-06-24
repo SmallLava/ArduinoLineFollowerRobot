@@ -4,7 +4,7 @@ void carState::CheckState(motor_state currentL, motor_state currentR) {
   if (currentL != LState || currentR != RState) {
     LMotorCtl(motor_state::Stop, 0);
     RMotorCtl(motor_state::Stop, 0);
-    delay(50);
+    delay(10); // 縮短延遲以消除循跡抖動
     LState = currentL;
     RState = currentR;
   }
@@ -28,16 +28,34 @@ void carState::Backward(int speed) {
   RMotorCtl(motor_state::Backward, speed);
 }
 
-void carState::Leftturn() {
+void carState::Leftturn(int speed) {
   CheckState(motor_state::Forward, motor_state::Forward);
-  LMotorCtl(motor_state::Forward, 120);
-  RMotorCtl(motor_state::Forward, 200);
+  LMotorCtl(motor_state::Forward, 0);
+  RMotorCtl(motor_state::Forward, speed);
 }
 
-void carState::Rightturn() {
+void carState::Rightturn(int speed) {
   CheckState(motor_state::Forward, motor_state::Forward);
-  LMotorCtl(motor_state::Forward, 200);
-  RMotorCtl(motor_state::Forward, 120);
+  LMotorCtl(motor_state::Forward, speed);
+  RMotorCtl(motor_state::Stop, 0);
+}
+
+void carState::SharpLeft(int speed) {
+  CheckState(motor_state::Backward, motor_state::Forward);
+  LMotorCtl(motor_state::Backward, speed); // 稍微提升原地旋轉速度
+  RMotorCtl(motor_state::Forward, speed);
+}
+
+void carState::SharpRight(int speed) {
+  CheckState(motor_state::Forward, motor_state::Backward);
+  LMotorCtl(motor_state::Forward, speed);
+  RMotorCtl(motor_state::Backward, speed); // 稍微提升原地旋轉速度
+}
+
+void carState::Keep() {
+  CheckState(LState, RState);
+  LMotorCtl(LState, (LState == motor_state::Stop) ? 0 : 200);
+  RMotorCtl(RState, (RState == motor_state::Stop) ? 0 : 200);
 }
 
 void carState::LMotorCtl(carState::motor_state state, int speed) {
